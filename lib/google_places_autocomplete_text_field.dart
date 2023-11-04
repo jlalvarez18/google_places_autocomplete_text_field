@@ -2,15 +2,13 @@ library google_places_autocomplete_text_field;
 
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:rxdart/rxdart.dart';
-
 import 'package:google_places_autocomplete_text_field/model/place_details.dart';
 import 'package:google_places_autocomplete_text_field/model/prediction.dart';
+import 'package:rxdart/rxdart.dart';
 
 class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
   final String? initialValue;
@@ -66,9 +64,9 @@ class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
 
   /// Specific to this package
   final InputDecoration? inputDecoration;
-  final ItemClick? itmClick;
+  final ItemClick? itemClick;
   final GetPlaceDetailswWithLatLng? getPlaceDetailWithLatLng;
-  final bool isLatLngRequired;
+  final bool isPlaceDetailsRequired;
   final String googleAPIKey;
   final int debounceTime;
   final List<String>? countries;
@@ -84,8 +82,8 @@ class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
     required this.googleAPIKey,
     this.debounceTime = 600,
     this.inputDecoration,
-    this.itmClick,
-    this.isLatLngRequired = true,
+    this.itemClick,
+    this.isPlaceDetailsRequired = true,
     this.countries = const [],
     this.getPlaceDetailWithLatLng,
     this.predictionsStyle,
@@ -317,25 +315,32 @@ class _GooglePlacesAutoCompleteTextFormFieldState
       padding: EdgeInsets.zero,
       shrinkWrap: true,
       itemCount: allPredictions.length,
-      itemBuilder: (BuildContext context, int index) => InkWell(
-        onTap: () {
-          if (index < allPredictions.length) {
-            widget.itmClick!(allPredictions[index]);
-            if (!widget.isLatLngRequired) return;
+      itemBuilder: (BuildContext context, int index) {
+        final prediction = allPredictions[index];
 
-            getPlaceDetailsFromPlaceId(allPredictions[index]);
+        return InkWell(
+          onTap: () async {
+            final itemClick = widget.itemClick;
+            if (itemClick != null) {
+              PlaceDetails? details;
+              if (widget.isPlaceDetailsRequired) {
+                details = await getPlaceDetailsFromPlaceId(prediction);
+              }
+
+              itemClick(prediction, details);
+            }
 
             removeOverlay();
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          child: Text(
-            allPredictions[index].description!,
-            style: widget.predictionsStyle ?? widget.style,
+          },
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            child: Text(
+              prediction.description!,
+              style: widget.predictionsStyle ?? widget.style,
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -346,7 +351,7 @@ class _GooglePlacesAutoCompleteTextFormFieldState
     _overlayEntry!.markNeedsBuild();
   }
 
-  Future<void> getPlaceDetailsFromPlaceId(Prediction prediction) async {
+  Future<PlaceDetails> getPlaceDetailsFromPlaceId(Prediction prediction) async {
     try {
       final prefix = widget.proxyURL ?? "";
       final url =
@@ -357,10 +362,17 @@ class _GooglePlacesAutoCompleteTextFormFieldState
 
       final placeDetails = PlaceDetails.fromJson(response.data);
 
-      prediction.lat = placeDetails.result!.geometry!.location!.lat.toString();
-      prediction.lng = placeDetails.result!.geometry!.location!.lng.toString();
+      final block = widget.getPlaceDetailWithLatLng;
+      if (block != null) {
+        final location = placeDetails.result?.geometry?.location;
 
-      widget.getPlaceDetailWithLatLng!(prediction);
+        prediction.lat = location?.lat.toString();
+        prediction.lng = location?.lng.toString();
+
+        block(prediction);
+      }
+
+      return placeDetails;
     } catch (e) {
       rethrow;
     }
@@ -373,7 +385,6 @@ PlacesAutocompleteResponse parseResponse(Map responseBody) =>
 PlaceDetails parsePlaceDetailMap(Map responseBody) =>
     PlaceDetails.fromJson(responseBody as Map<String, dynamic>);
 
-typedef ItemClick = void Function(Prediction postalCodeResponse);
-typedef GetPlaceDetailswWithLatLng = void Function(
-    Prediction postalCodeResponse);
+typedef ItemClick = void Function(Prediction prediction, PlaceDetails? details);
+typedef GetPlaceDetailswWithLatLng = void Function(Prediction prediction);
 typedef OverlayContainer = Widget Function(Widget overlayChild);

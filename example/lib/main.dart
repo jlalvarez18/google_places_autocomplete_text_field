@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:google_places_autocomplete_text_field/google_places_autocomplete_text_field.dart';
+import 'package:google_places_autocomplete_text_field/model/place_details.dart';
 import 'package:google_places_autocomplete_text_field/model/prediction.dart';
 
 void main() {
@@ -16,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Google Places Autocomplete Demo'),
+      home: const MyHomePage(title: 'Google Places Autocomplete Demo'),
     );
   }
 }
@@ -72,9 +75,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: child,
                 ),
                 getPlaceDetailWithLatLng: (prediction) {
-                  print('placeDetails${prediction.lng}');
+                  log('placeDetails${prediction.lng}');
                 },
-                itmClick: (Prediction prediction) =>
+                itemClick: (Prediction prediction, PlaceDetails? details) =>
                     _textController.text = prediction.description!,
               ),
             ),
@@ -95,6 +98,6 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
 
-    print(_textController.text);
+    log(_textController.text);
   }
 }
