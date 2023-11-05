@@ -61,6 +61,7 @@ class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
   final MouseCursor? mouseCursor;
   final EditableTextContextMenuBuilder? contextMenuBuilder;
   final String? Function(String?)? validator;
+  final FormFieldSetter<String?>? onSaved;
 
   /// Specific to this package
   final InputDecoration? inputDecoration;
@@ -140,6 +141,7 @@ class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
     this.mouseCursor,
     this.contextMenuBuilder,
     this.validator,
+    this.onSaved,
   });
 
   @override
@@ -237,6 +239,7 @@ class _GooglePlacesAutoCompleteTextFormFieldState
         mouseCursor: widget.mouseCursor,
         contextMenuBuilder: widget.contextMenuBuilder,
         validator: widget.validator,
+        onSaved: widget.onSaved,
       ),
     );
   }
